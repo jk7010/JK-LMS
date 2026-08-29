@@ -35,17 +35,14 @@ No root-level `node_modules` are required.
 
 ## Install
 
-From root:
-
 ```bash
-npm run install:all
+cd lmsbackend
+npm install
 ```
 
-Or separately:
-
 ```bash
-npm install --prefix lmsbackend
-npm install --prefix lmsfrontend
+cd ../lmsfrontend
+npm install
 ```
 
 ## Run Development
@@ -53,13 +50,15 @@ npm install --prefix lmsfrontend
 - Backend only:
 
 ```bash
-npm run dev:backend
+cd lmsbackend
+npm run dev
 ```
 
 - Frontend only:
 
 ```bash
-npm run dev:frontend
+cd lmsfrontend
+npm start
 ```
 
 - Both from backend script:
@@ -71,7 +70,8 @@ npm run app --prefix lmsbackend
 ## Build Frontend
 
 ```bash
-npm run build:frontend
+cd lmsfrontend
+npm run build
 ```
 
 ## Deployment Notes
