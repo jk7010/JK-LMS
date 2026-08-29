@@ -1,0 +1,11 @@
+{
+  "name": "jk-lms-workspace",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install --prefix lmsbackend ; npm install --prefix lmsfrontend",
+    "dev": "npm run dev --prefix lmsbackend",
+    "dev:backend": "npm run dev --prefix lmsbackend",
+    "dev:frontend": "npm start --prefix lmsfrontend",
+    "build:frontend": "npm run build --prefix lmsfrontend"
+  }
+}
