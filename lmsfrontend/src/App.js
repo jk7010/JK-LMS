@@ -19,6 +19,8 @@ import StudentAssignments from "./Components/StudentAssignments";
 import StudentGrades from "./Components/StudentGrades";
 import {ToastContainer} from "react-toastify";
 import ProtectedRoute from "./Components/ProtectedRoute";
+import AdminLogin from "./Components/AdminLogin";
+import SuperAdminDashboard from "./Components/SuperAdminDashboard";
 
 function App() {
   return (
@@ -26,6 +28,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />}></Route>
         <Route path="/login" element={<Login />}></Route>
+        <Route path="/admin/login" element={<AdminLogin />}></Route>
+        <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={["SuperAdmin"]}><SuperAdminDashboard /></ProtectedRoute>}></Route>
         <Route path="/register" element={<Register />}></Route>
         <Route path="/teacherdashboard" element={<ProtectedRoute allowedRoles={["Teacher"]}><TeacherDashboard /></ProtectedRoute>}></Route>
         <Route path="/studentdashboard" element={<ProtectedRoute allowedRoles={["Student"]}><Studentdashboard /></ProtectedRoute>}></Route>

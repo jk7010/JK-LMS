@@ -21,6 +21,19 @@ const UserSchema = mongoose.Schema({
         required : true,
         enum: ["Teacher", "Student"],
     },
+    approvalStatus: {
+        type: String,
+        enum: ["Pending", "Approved", "Rejected"],
+        default: "Pending",
+    },
+    approvedBy: {
+        type: String,
+        default: "",
+    },
+    approvedAt: {
+        type: Date,
+        default: null,
+    },
     createdAt:{
         type: Date,
         default: Date.now,

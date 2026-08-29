@@ -14,16 +14,16 @@ const Register = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      await api.post("/register", {
+      const response = await api.post("/register", {
         name,
         email,
         password,
         role,
       });
-      toast.success("Registered Successfully!");
+      toast.success(response.data.message || "Registered successfully");
       navigate("/");
     } catch (error) {
-      toast.error("Registration failed! Try again.");
+      toast.error(error.response?.data?.message || "Registration failed! Try again.");
       console.error(error);
     }
   };

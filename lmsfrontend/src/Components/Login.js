@@ -106,6 +106,9 @@ const Login = () => {
                   <span className="text-muted">Don't have an account? </span>
                   <Link to="/register" className="text-primary fw-bold">Register</Link>
                 </div>
+                <div className="text-center mt-2">
+                  <Link to="/admin/login" className="text-decoration-none">Login as Super Admin</Link>
+                </div>
               </Card.Body>
             </Card>
           </Col>

@@ -18,6 +18,8 @@ const PORT = Number(process.env.PORT) || 3210;
 const MONGODB_URI = process.env.MONGODB_URI;
 const JWT_SECRET = process.env.JWT_SECRET;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:3000";
+const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || "admin@jklms";
+const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD || "abc123";
 
 if (!MONGODB_URI) {
   console.error("Missing MONGODB_URI in environment");
@@ -44,6 +46,33 @@ const toObjectId = (value) => {
     return null;
   }
   return new mongoose.Types.ObjectId(value);
+};
+
+const signToken = (payload) => {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
+};
+
+const authenticate = (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+
+    if (!token) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    req.auth = jwt.verify(token, JWT_SECRET);
+    return next();
+  } catch (error) {
+    return res.status(401).json({ message: "Invalid or expired token" });
+  }
+};
+
+const requireSuperAdmin = (req, res, next) => {
+  if (req.auth?.role !== "SuperAdmin") {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+  return next();
 };
 
 app.get("/", (req, res) => {
@@ -78,6 +107,7 @@ app.post("/register", async (req, res) => {
       email: normalizedEmail,
       password: hashedPassword,
       role,
+      approvalStatus: "Pending",
     });
 
     sendWelcomeEmail({
@@ -89,11 +119,35 @@ app.post("/register", async (req, res) => {
     });
 
     return res.status(201).json({
-      message: "User registered successfully",
+      message: "Registration submitted. Wait for admin approval before login.",
       userId: user._id,
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
+  }
+});
+
+app.post("/admin/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
+
+    if (email.trim().toLowerCase() !== SUPER_ADMIN_EMAIL.toLowerCase() || password !== SUPER_ADMIN_PASSWORD) {
+      return res.status(401).json({ message: "Invalid admin credentials" });
+    }
+
+    const token = signToken({ role: "SuperAdmin", email: SUPER_ADMIN_EMAIL });
+    return res.json({
+      message: "Admin login successful",
+      status: 200,
+      role: "SuperAdmin",
+      name: "Super Admin",
+      token,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "An error occurred during admin login" });
   }
 });
 
@@ -116,9 +170,14 @@ app.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Password incorrect" });
     }
 
-    const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    if (user.approvalStatus !== "Approved") {
+      return res.status(403).json({
+        message: "Your account is pending admin approval",
+        status: 403,
+      });
+    }
+
+    const token = signToken({ userId: user._id, role: user.role });
 
     return res.json({
       message: "Login successfully",
@@ -130,6 +189,70 @@ app.post("/login", async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ message: "An error occurred during login" });
+  }
+});
+
+app.get("/admin/pending-users", authenticate, requireSuperAdmin, async (req, res) => {
+  try {
+    const users = await User.find({ approvalStatus: "Pending" }, "name email role approvalStatus createdAt")
+      .sort({ createdAt: -1 });
+    return res.json(users);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+app.get("/admin/users", authenticate, requireSuperAdmin, async (req, res) => {
+  try {
+    const users = await User.find({}, "name email role approvalStatus approvedBy approvedAt createdAt")
+      .sort({ createdAt: -1 });
+    return res.json(users);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+app.put("/admin/users/:id/approve", authenticate, requireSuperAdmin, async (req, res) => {
+  try {
+    const userId = toObjectId(req.params.id);
+    if (!userId) {
+      return res.status(400).json({ message: "Invalid user id" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.approvalStatus = "Approved";
+    user.approvedBy = req.auth.email || SUPER_ADMIN_EMAIL;
+    user.approvedAt = new Date();
+    await user.save();
+
+    return res.json({ message: "User approved successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+app.delete("/admin/users/:id", authenticate, requireSuperAdmin, async (req, res) => {
+  try {
+    const userId = toObjectId(req.params.id);
+    if (!userId) {
+      return res.status(400).json({ message: "Invalid user id" });
+    }
+
+    const user = await User.findByIdAndDelete(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    await Course.updateMany({}, { $pull: { enrolled_student_id: user._id } });
+    await Submission.deleteMany({ student_id: user._id });
+
+    return res.json({ message: "User removed successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 });
 

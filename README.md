@@ -18,6 +18,7 @@ No root-level `node_modules` are required.
 - Student grade view
 - Protected frontend routes by role
 - Environment-variable based configuration
+- Super admin login and user approval workflow
 
 ## Environment Setup
 
@@ -28,6 +29,8 @@ No root-level `node_modules` are required.
      - `JWT_SECRET`
      - `PORT`
      - `CLIENT_ORIGIN`
+   - `SUPER_ADMIN_EMAIL`
+   - `SUPER_ADMIN_PASSWORD`
 
 2. Frontend env:
    - Copy `lmsfrontend/.env.example` to `lmsfrontend/.env`
